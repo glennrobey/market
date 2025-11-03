@@ -1,5 +1,6 @@
 import db from "#db/client";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import dotenv from "dotenv";
 
 beforeAll(async () => {
   await db.connect();
@@ -16,13 +17,13 @@ describe("Database schema", () => {
         { column_name: "id", data_type: "integer", is_nullable: "NO" },
         { column_name: "username", data_type: "text", is_nullable: "NO" },
         { column_name: "password", data_type: "text", is_nullable: "NO" },
-      ]),
+      ])
     );
 
     const isUsernameUnique = await isColumnConstrained(
       "users",
       "username",
-      "unique",
+      "unique"
     );
     expect(isUsernameUnique).toBe(true);
   });
@@ -35,13 +36,13 @@ describe("Database schema", () => {
         { column_name: "date", data_type: "date", is_nullable: "NO" },
         { column_name: "note", data_type: "text", is_nullable: "YES" },
         { column_name: "user_id", data_type: "integer", is_nullable: "NO" },
-      ]),
+      ])
     );
 
     const isUserIdForeignKey = await isColumnConstrained(
       "orders",
       "user_id",
-      "foreign key",
+      "foreign key"
     );
     expect(isUserIdForeignKey).toBe(true);
   });
@@ -54,7 +55,7 @@ describe("Database schema", () => {
         { column_name: "title", data_type: "text", is_nullable: "NO" },
         { column_name: "description", data_type: "text", is_nullable: "NO" },
         { column_name: "price", data_type: "numeric", is_nullable: "NO" },
-      ]),
+      ])
     );
   });
 
@@ -65,33 +66,33 @@ describe("Database schema", () => {
         { column_name: "order_id", data_type: "integer", is_nullable: "NO" },
         { column_name: "product_id", data_type: "integer", is_nullable: "NO" },
         { column_name: "quantity", data_type: "integer", is_nullable: "NO" },
-      ]),
+      ])
     );
 
     const isOrderIdForeignKey = await isColumnConstrained(
       "orders_products",
       "order_id",
-      "foreign key",
+      "foreign key"
     );
     expect(isOrderIdForeignKey).toBe(true);
 
     const isProductIdForeignKey = await isColumnConstrained(
       "orders_products",
       "product_id",
-      "foreign key",
+      "foreign key"
     );
     expect(isProductIdForeignKey).toBe(true);
 
     const isOrderIdPrimaryKey = await isColumnConstrained(
       "orders_products",
       "order_id",
-      "primary key",
+      "primary key"
     );
 
     const isProductIdPrimaryKey = await isColumnConstrained(
       "orders_products",
       "order_id",
-      "primary key",
+      "primary key"
     );
 
     expect(isOrderIdPrimaryKey && isProductIdPrimaryKey).toBe(true);
@@ -126,7 +127,7 @@ describe("Database is seeded with", () => {
   test("an order by the user of at least 5 distinct products", async () => {
     const { rowCount } = await db.query(
       "SELECT DISTINCT product_id FROM orders_products WHERE order_id = $1",
-      [orderId],
+      [orderId]
     );
     expect(rowCount).toBeGreaterThanOrEqual(5);
   });
