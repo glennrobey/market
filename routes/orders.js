@@ -1,41 +1,34 @@
 import express from "express";
 import db from "#db/client";
-import requireUser from "#middleware/requireUser";
-import getUserFromToken from "#middleware/getUserFromToken";
 import requireBody from "#middleware/requireBody";
+import { authenticateToken } from "#middleware/auth";
 
 const router = express.Router();
 
 // 🔒 POST /orders - Create a new order
-router.post(
-  "/",
-  getUserFromToken,
-  requireUser,
-  requireBody(["date"]),
-  async (req, res) => {
-    const { date, note } = req.body;
-    const userId = req.user.id;
+router.post("/", authenticateToken, requireBody(["date"]), async (req, res) => {
+  const { date, note } = req.body;
+  const userId = req.user.id;
 
-    try {
-      const {
-        rows: [order],
-      } = await db.query(
-        `INSERT INTO orders (date, note, user_id)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-        [date, note || null, userId]
-      );
+  try {
+    const {
+      rows: [order],
+    } = await db.query(
+      `INSERT INTO orders (date, note, user_id)
+         VALUES ($1, $2, $3)
+         RETURNING *`,
+      [date, note || null, userId]
+    );
 
-      res.status(201).json(order);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send("Server error");
-    }
+    res.status(201).json(order);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
-);
+});
 
 // 🔒 GET /orders - Get all orders for logged-in user
-router.get("/", getUserFromToken, requireUser, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   const userId = req.user.id;
 
   try {
@@ -51,7 +44,7 @@ router.get("/", getUserFromToken, requireUser, async (req, res) => {
 });
 
 // 🔒 GET /orders/:id - Get a specific order for logged-in user
-router.get("/:id", getUserFromToken, requireUser, async (req, res) => {
+router.get("/:id", authenticateToken, async (req, res) => {
   const orderId = req.params.id;
   const userId = req.user.id;
 
@@ -71,7 +64,7 @@ router.get("/:id", getUserFromToken, requireUser, async (req, res) => {
 });
 
 // 🔒 GET /orders/:id/products - Get products in an order
-router.get("/:id/products", getUserFromToken, requireUser, async (req, res) => {
+router.get("/:id/products", authenticateToken, async (req, res) => {
   const orderId = req.params.id;
   const userId = req.user.id;
 
@@ -99,5 +92,46 @@ router.get("/:id/products", getUserFromToken, requireUser, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
+// 🔒 POST /orders/:id/products - Add a product to an order
+router.post(
+  "/:id/products",
+  authenticateToken,
+  requireBody(["productId", "quantity"]),
+  async (req, res) => {
+    const orderId = req.params.id;
+    const { productId, quantity } = req.body;
+    const userId = req.user.id;
+
+    try {
+      const {
+        rows: [order],
+      } = await db.query(`SELECT * FROM orders WHERE id = $1`, [orderId]);
+
+      if (!order) return res.status(404).send("Order not found");
+      if (order.user_id !== userId) return res.status(403).send("Forbidden");
+
+      const {
+        rows: [product],
+      } = await db.query(`SELECT * FROM products WHERE id = $1`, [productId]);
+
+      if (!product) return res.status(400).send("Product does not exist");
+
+      const {
+        rows: [orderProduct],
+      } = await db.query(
+        `INSERT INTO orders_products (order_id, product_id, quantity)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+        [orderId, productId, quantity]
+      );
+
+      res.status(201).json(orderProduct);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Server error");
+    }
+  }
+);
 
 export default router;

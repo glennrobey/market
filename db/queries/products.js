@@ -1,4 +1,5 @@
 import db from "#db/client";
+import { authenticateToken } from "#middleware/auth";
 
 // Get product by ID
 export async function getProductById(id) {

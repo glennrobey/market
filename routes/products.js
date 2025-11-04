@@ -2,6 +2,7 @@ import express from "express";
 import db from "#db/client";
 import requireUser from "#middleware/requireUser";
 import getUserFromToken from "#middleware/getUserFromToken";
+import { authenticateToken } from "#middleware/auth";
 
 const router = express.Router();
 

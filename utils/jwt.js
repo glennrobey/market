@@ -1,12 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const SECRET = process.env.JWT_SECRET;
-
-if (!SECRET) {
-  throw new Error(
-    "JWT_SECRET is not defined in environment variables. Please set it in your .env file."
-  );
-}
+const SECRET = process.env.JWT_SECRET || "secret";
 
 /** Creates a token with the given payload */
 export function createToken(payload) {

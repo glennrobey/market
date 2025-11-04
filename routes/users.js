@@ -1,12 +1,16 @@
 import express from "express";
-import db from "#db/client";
 import bcrypt from "bcrypt";
-import { createToken } from "#utils/jwt";
+import jwt from "jsonwebtoken";
+import db from "#db/client";
 import requireBody from "#middleware/requireBody";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const router = express.Router();
+const SALT_ROUNDS = 10;
 
-// POST /users/register
+// 🔒 POST /users/register - Create a new user and return a token
 router.post(
   "/register",
   requireBody(["username", "password"]),
@@ -14,26 +18,31 @@ router.post(
     const { username, password } = req.body;
 
     try {
-      const hashed = await bcrypt.hash(password, 10);
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+      // Insert user into DB
       const {
         rows: [user],
       } = await db.query(
-        `INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *`,
-        [username, hashed]
+        `INSERT INTO users (username, password)
+       VALUES ($1, $2)
+       RETURNING id, username`,
+        [username, hashedPassword]
       );
 
-      // Create JWT Token
-      const token = createToken({ id: user.id });
-      res.json({ token });
+      // Sign a JWT token
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+
+      res.status(201).send(token);
     } catch (err) {
       console.error(err);
-      res.status(400).send("Username may already exist.");
+      res.status(500).send("Server error");
     }
   }
 );
 
-// POST /users/login
+// 🔒 POST /users/login - Authenticate user and return a token
 router.post(
   "/login",
   requireBody(["username", "password"]),
@@ -43,15 +52,15 @@ router.post(
     try {
       const {
         rows: [user],
-      } = await db.query(`SELECT * FROM users WHERE username = $1`, [username]);
+      } = await db.query("SELECT * FROM users WHERE username = $1", [username]);
 
-      if (!user) return res.status(400).send("Invalid credentials");
+      if (!user) return res.status(401).send("Invalid credentials");
 
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) return res.status(400).send("Invalid credentials");
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) return res.status(401).send("Invalid credentials");
 
-      const token = createToken({ id: user.id });
-      res.json({ token });
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+      res.send(token);
     } catch (err) {
       console.error(err);
       res.status(500).send("Server error");

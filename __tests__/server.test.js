@@ -2,6 +2,7 @@ import app from "#app";
 import db from "#db/client";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, test } from "vitest";
+import dotenv from "dotenv";
 
 let token;
 let lastProduct;
@@ -40,7 +41,7 @@ describe("users", () => {
       const {
         rows: [user],
       } = await db.query(
-        "SELECT password FROM users WHERE username = 'tasktesttask'",
+        "SELECT password FROM users WHERE username = 'tasktesttask'"
       );
       expect(user.password).not.toBe("password");
     });
@@ -78,7 +79,7 @@ describe("products", () => {
   describe("GET /products/:id", () => {
     it("sends 404 if the product does not exist", async () => {
       const response = await request(app).get(
-        "/products/" + (lastProduct.id + 1),
+        "/products/" + (lastProduct.id + 1)
       );
       expect(response.status).toBe(404);
     });
@@ -124,7 +125,7 @@ describe("orders", () => {
           id: expect.any(Number),
           date: expect.any(String),
           user_id: expect.any(Number),
-        }),
+        })
       );
       newOrderId = order.id;
 
@@ -151,7 +152,7 @@ describe("orders", () => {
           expect.objectContaining({
             id: newOrderId,
           }),
-        ]),
+        ])
       );
     });
   });
@@ -234,7 +235,7 @@ describe("orders", () => {
           order_id: newOrderId,
           product_id: orderedProduct.productId,
           quantity: orderedProduct.quantity,
-        }),
+        })
       );
     });
   });
@@ -265,7 +266,7 @@ describe("orders", () => {
         .set("Authorization", `Bearer ${token}`);
       expect(response.status).toBe(200);
       expect(response.body).toEqual(
-        expect.arrayContaining([expect.objectContaining(lastProduct)]),
+        expect.arrayContaining([expect.objectContaining(lastProduct)])
       );
     });
   });
@@ -280,7 +281,7 @@ describe("orders", () => {
 
     it("sends 401 if the user is not logged in", async () => {
       const response = await request(app).get(
-        "/products/" + lastProduct.id + "/orders",
+        "/products/" + lastProduct.id + "/orders"
       );
       expect(response.status).toBe(401);
     });
@@ -295,7 +296,7 @@ describe("orders", () => {
           expect.objectContaining({
             id: newOrderId,
           }),
-        ]),
+        ])
       );
     });
   });
